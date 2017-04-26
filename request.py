@@ -33,8 +33,6 @@ params2 = {'_ajax[templates][]':'main',
 try:
     session = requests.Session()
     r = session.get(myUrl, params=value, headers=myHeader)
-    # r = session.get(myUrl, params=value, cookies='PHPSESSID=k9t4imacur3avqti6vpm1iqvm5; remember=1%3Bru%3BRU; cookieconsent_dismissed=yes;ABSESS=12lf1tipefm2pi1olkjtcle8q4; _gat=1; _gat_UA-35638432-3=1; startConnection=DME%40PAR%402017-06-07%402017-06-08; _ga=GA1.2.1129290809.1492086949; lst=1493032981')
-    r = session.get('https://www.flyniki.com/site/javascript/ab/airportsuggestion/view.js?_=1493114488816')
     r1 = session.post(r.url, params=params2, headers=myHeader2)
     print (r1.request.headers)
     print (r1.url)
