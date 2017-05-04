@@ -147,11 +147,13 @@ def flights_combination(flights, flag_oneway):
                'EconomyFlex', 'BusinessFlex'])
         for c in range(len(combination)):
             print(combination[c])
-    return
 
 
-if __name__ == "__main__":
+def main():
     user_data = enter_data()
     text_json = request(user_data)
     flights = parser(text_json.json(), user_data['oneway'])
     flights_combination(flights, user_data['oneway'])
+
+if __name__ == "__main__":
+    main()
