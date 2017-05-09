@@ -5,6 +5,7 @@ from lxml import html
 
 
 def enter_data():
+    """Display message about entering data from the keyboard and read input data"""
     keys_for_user_data = ['departure', 'destination', 'outboundDate', 'returnDate']
     print('Hello! Please enter parameters of the desired flight separated by a comma')
     print('Departure(IATA airport code), destination(IATA airport code),'
@@ -23,16 +24,23 @@ def enter_data():
 
 
 def gen_dict_from_enter_data(keys_for_user_data, data):
+    """Convert input data to dictionary"""
     dict_user_data = {keys_for_user_data[i]: data[i] for i in range(len(data))}
     dict_user_data['oneway'] = 0
+    # Check oneway ticket
     if 4 == len(dict_user_data):
         dict_user_data['returnDate'] = dict_user_data['outboundDate']
         dict_user_data['oneway'] = 'on'
-    # flag oneway ticket
     return dict_user_data
 
 
 def request(dict_user_data):
+    """Send request to the site with input data
+
+    Keyword arguments:
+    dict_user_data -- dict containing IATA airport codes, outbound/return dates
+
+    """
     my_url = 'http://www.flyniki.com/ru/booking/flight/vacancy.php?'
     value = {'departure': dict_user_data['departure'], 'destination': dict_user_data['destination'],
              'outboundDate': dict_user_data['outboundDate'], 'returnDate': dict_user_data['returnDate'],
@@ -62,6 +70,13 @@ def request(dict_user_data):
 
 
 def parser(text_json, flag_oneway):
+    """Extraction of information received from the site
+
+    Keyword arguments:
+    text_json - received html code
+    flag_oneway - flag block return flight
+
+    """
     try:
         flights = {}
         text = text_json['templates']['main']
@@ -83,6 +98,7 @@ def parser(text_json, flag_oneway):
 
 
 def table_processing(table):
+    """Record information in dictionary"""
     info = {}
     num_tr = len(table)
     for num_tr in range(1, num_tr, 2):
@@ -103,17 +119,20 @@ def table_processing(table):
 
 
 def check_price(price):
+    """Return price as a floating-point number"""
+    # Check availability
     if len(price) > 0:
         p_text = price[0].text
-        p = p_text[0:-3]
-        p = p.split('.')
-        p = p[0] + p[1]
+        p_text = p_text.replace('.', '')
+        p = p_text.replace(',', '.')
     else:
         p = 0
-    return int(p)
+    return float(p)
 
 
 def flights_combination(flights, flag_oneway):
+    """Forms all possible combinations of flights with the indication of the class
+     and displays the final cost of round-trip flight"""
     print('Currency', flights['currency'])
     if flag_oneway == 'on':
         print([['Time'], 'Duration', ['Time'], 'Duration', 'EconomyClassic',
