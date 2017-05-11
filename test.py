@@ -1,3 +1,9 @@
+"""
+
+This module displays information about flights from the site flyniki.com.
+Python 3.6
+
+"""
 import requests
 import sys
 import re
