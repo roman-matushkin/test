@@ -28,20 +28,21 @@ def gen_dict_from_enter_data(keys_for_user_data, data):
     dict_user_data = {keys_for_user_data[i]: data[i] for i in range(len(data))}
     dict_user_data['oneway'] = 0
     # Check oneway ticket
-    if 4 == len(dict_user_data):
+    if len(dict_user_data) == 4:
         dict_user_data['returnDate'] = dict_user_data['outboundDate']
         dict_user_data['oneway'] = 'on'
     return dict_user_data
 
 
 def request(dict_user_data):
-    """Send request to the site with input data
+    """
+    Send request to the site with input data
 
     Keyword arguments:
     dict_user_data -- dict containing IATA airport codes, outbound/return dates
 
     """
-    my_url = 'http://www.flyniki.com/ru/booking/flight/vacancy.php?'
+    my_url = 'http://www.flyniki.com/ru/booking/flight/vacancy.php'
     value = {'departure': dict_user_data['departure'], 'destination': dict_user_data['destination'],
              'outboundDate': dict_user_data['outboundDate'], 'returnDate': dict_user_data['returnDate'],
              'oneway': dict_user_data['oneway'], 'openDateOverview': 0, 'adultCount': 1, 'childCount': 0,
@@ -62,7 +63,12 @@ def request(dict_user_data):
         session = requests.Session()
         r = session.get(my_url, params=value)
         text_json = session.post(r.url, data=value_ajax)
-    except Exception:
+        js = text_json.json()
+        key_error = js.get('error')
+        if key_error is not None:
+            print('No flights found. Please check your search and try again.')
+            sys.exit()
+    except requests.ConnectionError:
         print('Error web req!')
         print(sys.exc_info()[1])
         sys.exit()
@@ -70,30 +76,27 @@ def request(dict_user_data):
 
 
 def parser(text_json, flag_oneway):
-    """Extraction of information received from the site
+    """
+    Extraction of information received from the site
 
     Keyword arguments:
     text_json - received html code
     flag_oneway - flag block return flight
 
     """
-    try:
-        flights = {}
-        text = text_json['templates']['main']
-        html_text = html.fromstring(text)
-        outbound_table = html_text.xpath(
-            './/*[@id="flighttables"]/*[@class="outbound block"]/*[@class="tablebackground"]/table/tbody')
-        flights['outbound'] = table_processing(outbound_table[0])
-        currency_html = html_text.xpath(
-            './/*[@id="flighttables"]/*[@class="outbound block"]/*[@class="tablebackground"]/table/thead/tr[2]/*[@id]')
-        flights['currency'] = currency_html[0].text
-        if flag_oneway == 0:
-            return_table = html_text.xpath(
-                './/*[@id="flighttables"]/*[@class="return block"]/*[@class="tablebackground"]/table/tbody')
-            flights['return'] = table_processing(return_table[0])
-    except Exception:
-        print('No flights found. Please check your search and try again.')
-        sys.exit()
+    flights = {}
+    text = text_json['templates']['main']
+    html_text = html.fromstring(text)
+    outbound_table = html_text.xpath(
+       './/*[@id="flighttables"]/*[@class="outbound block"]/*[@class="tablebackground"]/table/tbody')
+    flights['outbound'] = table_processing(outbound_table[0])
+    currency_html = html_text.xpath(
+        './/*[@id="flighttables"]/*[@class="outbound block"]/*[@class="tablebackground"]/table/thead/tr[2]/*[@id]')
+    flights['currency'] = currency_html[0].text
+    if flag_oneway == 0:
+        return_table = html_text.xpath(
+            './/*[@id="flighttables"]/*[@class="return block"]/*[@class="tablebackground"]/table/tbody')
+        flights['return'] = table_processing(return_table[0])
     return flights
 
 
@@ -131,14 +134,15 @@ def check_price(price):
 
 
 def flights_combination(flights, flag_oneway):
-    """Forms all possible combinations of flights with the indication of the class
-     and displays the final cost of round-trip flight"""
-    print('Currency', flights['currency'])
+    """Combines all flight options and prints considering the price"""
     if flag_oneway == 'on':
         print([['Time'], 'Duration', ['Time'], 'Duration', 'EconomyClassic',
                'EconomyFlex', 'BusinessFlex'])
         outbound = flights['outbound']
         for f in outbound.keys():
+            outbound[f]['price_economy'] = str(outbound[f]['price_economy']) + flights['currency']
+            outbound[f]['price_economflex'] = str(outbound[f]['price_economflex']) + flights['currency']
+            outbound[f]['price_business'] = str(outbound[f]['price_business']) + flights['currency']
             print(outbound[f])
     else:
         combination = []
@@ -149,14 +153,14 @@ def flights_combination(flights, flag_oneway):
                 if outbound[o]['price_business'] == 0 or returnf[r]['price_business'] == 0:
                     combination.append(
                         [outbound[o]['time'], outbound[o]['duration'], returnf[r]['time'], returnf[r]['duration'],
-                         outbound[o]['price_economy'] + returnf[r]['price_economy'],
-                         outbound[o]['price_economflex'] + returnf[r]['price_economflex'], '-'])
+                         str(outbound[o]['price_economy'] + returnf[r]['price_economy'])+flights['currency'],
+                         str(outbound[o]['price_economflex'] + returnf[r]['price_economflex'])+flights['currency'], '-'])
                 else:
                     combination.append([outbound[o]['time'], outbound[o]['duration'], returnf[r]['time'],
                                         returnf[r]['duration'],
-                                        outbound[o]['price_economy'] + returnf[r]['price_economy'],
-                                        outbound[o]['price_economflex'] + returnf[r]['price_economflex'],
-                                        outbound[o]['price_business'] + returnf[r]['price_business']])
+                                        str(outbound[o]['price_economy'] + returnf[r]['price_economy'])+flights['currency'],
+                                        str(outbound[o]['price_economflex'] + returnf[r]['price_economflex'])+flights['currency'],
+                                        str(outbound[o]['price_business'] + returnf[r]['price_business'])+flights['currency']])
 
         def sort_flights(f):
             return f[4]
