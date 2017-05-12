@@ -65,18 +65,18 @@ def request(dict_user_data):
                   '_ajax[requestParams][infantCount]': '0',
                   '_ajax[requestParams][openDateOverview]': '',
                   '_ajax[requestParams][oneway]': dict_user_data['oneway']}
+    session = requests.Session()
     try:
-        session = requests.Session()
         r = session.get(my_url, params=value)
         text_json = session.post(r.url, data=value_ajax)
-        js = text_json.json()
-        key_error = js.get('error')
-        if key_error is not None:
-            print('No flights found. Please check your search and try again.')
-            sys.exit()
     except requests.ConnectionError:
         print('Error web req!')
         print(sys.exc_info()[1])
+        sys.exit()
+    js = text_json.json()
+    key_error = js.get('error')
+    if key_error is not None:
+        print('No flights found. Please check your search and try again.')
         sys.exit()
     return text_json
 
@@ -179,6 +179,7 @@ def flights_combination(flights, flag_oneway):
 
 
 def main():
+    """Main function"""
     user_data = enter_data()
     text_json = request(user_data)
     flights = parser(text_json.json(), user_data['oneway'])
