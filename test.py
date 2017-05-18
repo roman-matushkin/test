@@ -136,76 +136,30 @@ def find_iata_code(first_symb):
 def error_date(value):
     """Handles error response when invalid date input"""
     flag_oneway = value['oneway']
-    enter_year_outbound = int(value['outboundDate'][0:4])
-    enter_month_outbound = int(value['outboundDate'][5:7])
-    enter_day_outbound = int(value['outboundDate'][8:10])
-    current_date = datetime.datetime.now()
-    current_year = current_date.year
-    current_month = current_date.month
-    current_day = current_date.day
-    too_far_future_outbound = (enter_year_outbound > current_year and enter_month_outbound > current_month and
-                               enter_day_outbound > current_day)
-    past_date_outbound = ((enter_year_outbound < current_year or enter_month_outbound <= current_month) or
-                          (enter_year_outbound == current_year and enter_month_outbound == current_month and
-                          enter_day_outbound < current_day))
-    check_date_format(enter_year_outbound, enter_month_outbound, enter_day_outbound, 'outbound')
-    if too_far_future_outbound:
-        print("Don't think so far. There are no available tickets for the dates you have selected (outbound).")
-    elif past_date_outbound:
-        print("Sorry, you're late. This day has already passed (outbound).")
-
     if flag_oneway == 0:
-        enter_year_return = int(value['returnDate'][0:4])
-        enter_month_return = int(value['returnDate'][5:7])
-        enter_day_return = int(value['returnDate'][8:10])
-        too_far_future_return = (enter_year_return > current_year and enter_month_return > current_month and
-                                 enter_day_return > current_day)
-        past_date_return = ((enter_year_return < current_year or enter_month_return <= current_month) or
-                            (enter_year_return == current_year and enter_month_return == current_month and
-                             enter_day_return < current_day))
-        check_date_format(enter_year_return, enter_month_return, enter_day_return, 'return')
-        if too_far_future_return:
-            print("Don't think so far. There are no available tickets for the dates you have selected (return).")
-        elif past_date_return:
-            print("Sorry, you're late. This day has already passed (return).")
-        elif (enter_year_outbound > enter_year_return or enter_month_outbound > enter_month_return) or \
-             (enter_year_outbound == enter_year_return and enter_month_outbound == enter_month_return
-              and enter_day_outbound > enter_day_return):
+        enter_outbound_date = check_date_format(value['outboundDate'][2:])
+        enter_return_date = check_date_format(value['returnDate'][2:])
+        if enter_outbound_date > enter_return_date:
             print("You can't fly back without flying. In entered information the departure date after the return date")
+    else:
+        check_date_format(value['outboundDate'][2:])
     return
 
 
-def check_date_format(enter_year, enter_month, enter_day, type_way):
+def check_date_format(enter_date_str):
     """Search error in the entered date"""
+    try:
+        enter_date = datetime.datetime.strptime(enter_date_str, '%y-%m-%d')
+    except ValueError:
+        print("{} - it's not like an existing date".format(enter_date_str))
+        sys.exit()
     current_date = datetime.datetime.now()
-    current_year = current_date.year
-    current_month = current_date.month
-    # Leap year
-    leap_year = ((enter_year % 4) == 0 and (enter_year % 100) != 0) or (enter_year % 400) == 0
-    # If entered date is too far in the future
-    if enter_year > current_year and enter_month > current_month:
-        print("Don't think so far. There are no available tickets for the dates"
-              " you have selected. ({})".format(type_way))
-    # If entered date has already passed
-    elif enter_year < current_year and enter_month < current_month:
-        print("Sorry, you're late. This day has already passed ({})".format(type_way))
-    # Invalid month entered
-    elif enter_month > 12 or enter_month < 0:
-        print('You have chosen a non-existent month.'
-              ' This year there are only such options ({}):'.format(type_way) + '\n' +
-              '01 - January, 02 - February, 03 - March, 04 - April, 05 - May, 06 - June,' + '\n' +
-              '07 - July, 08 - August, 09 - September, 10 - October, 11 - November, 12 - December')
-    # Invalid day entered
-    elif enter_day > 31 or enter_day < 1 and enter_month == any([1, 3, 5, 7, 8, 10, 12]):
-        print('There are not so many numbers in a month ({}).'.format(type_way))
-    elif enter_day > 30 or enter_day < 1 and enter_month == any([4, 6, 9, 11]):
-        print('There are not so many numbers in a month ({}).'.format(type_way))
-    # Invalid day entered in February
-    elif enter_day > 29 or enter_day < 1 and enter_month == 2 and leap_year:
-        print('There are not so many numbers in a month ({}).'.format(type_way))
-    elif enter_day > 28 or enter_day < 1 and enter_month == 2 and not leap_year:
-        print('There are not so many numbers in a month ({}).'.format(type_way))
-    return
+    too_far_future = datetime.datetime(current_date.year+1, current_date.month, current_date.day-5)
+    if enter_date>too_far_future:
+        print("Don't think so far. There are no available tickets for the dates you have selected (outbound).")
+    elif enter_date<current_date:
+        print("Sorry, you're late. This day has already passed (outbound).")
+    return enter_date
 
 
 def parser(text_json, flag_oneway):
