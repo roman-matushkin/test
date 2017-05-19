@@ -163,9 +163,9 @@ def check_date_format(enter_date_str):
         sys.exit()
     current_date = datetime.datetime.now()
     too_far_future = datetime.datetime(current_date.year+1, current_date.month, current_date.day-4)
-    if enter_date>too_far_future:
+    if enter_date > too_far_future:
         print("Don't think so far. There are no available tickets for the dates you have selected (outbound).")
-    elif enter_date<current_date:
+    elif enter_date < current_date:
         print("Sorry, you're late. This day has already passed (outbound).")
     return enter_date
 
