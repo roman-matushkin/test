@@ -86,6 +86,11 @@ def request(dict_user_data):
     if key_error is not None:
         error_processing(js.get('errorRAW'), value)
         sys.exit()
+    # If there are no results, but site does not give an error
+    # It returns "<div id="vacancy_infos"></div>"
+    elif len(js['templates']['main']) < 33:
+        print('Could not find flights.')
+        sys.exit()
     return text_json
 
 
@@ -96,6 +101,7 @@ def error_processing(errorraw, value):
         error_iata_code(value, error)
     else:
         error_date(value)
+        print('Could not find flights.')
     return
 
 
@@ -123,7 +129,9 @@ def find_iata_code(first_symb):
     session = requests.Session()
     r = session.get(url_iata_code.format(first_symb.upper()))
     html_text = html.fromstring(r.text)
-    three_rand_num_tr = [random.randint(2, 20) for i in range(3)]
+    num_tr = len(html_text.xpath('/html/body/div[@id="content"]/div[@id="bodyContent"]/div[@id="mw-content-text"]'
+                                 '/table//tr'))-100
+    three_rand_num_tr = [random.randint(2, num_tr) for i in range(3)]
     rand_iata_code = []
     for n in three_rand_num_tr:
         a = html_text.xpath('/html/body/div[@id="content"]/div[@id="bodyContent"]/div[@id="mw-content-text"]'
@@ -154,7 +162,7 @@ def check_date_format(enter_date_str):
         print("{} - it's not like an existing date".format(enter_date_str))
         sys.exit()
     current_date = datetime.datetime.now()
-    too_far_future = datetime.datetime(current_date.year+1, current_date.month, current_date.day-5)
+    too_far_future = datetime.datetime(current_date.year+1, current_date.month, current_date.day-4)
     if enter_date>too_far_future:
         print("Don't think so far. There are no available tickets for the dates you have selected (outbound).")
     elif enter_date<current_date:
